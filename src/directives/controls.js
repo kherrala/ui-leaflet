@@ -40,6 +40,10 @@ angular.module('ui-leaflet').directive('controls', function (leafletLogger, leaf
                     for (var newName in newControls) {
                         var control;
 
+                        if (newName === 'layers') {
+                            continue;
+                        }
+
                         var controlType = isDefined(newControls[newName].type) ? newControls[newName].type : newName;
 
                         if (!isValidControlType(controlType)) {
