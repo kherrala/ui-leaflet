@@ -1,10 +1,12 @@
 angular.module('ui-leaflet')
-.directive('geojson', function (leafletLogger, $rootScope, leafletData, leafletHelpers,
+.directive('geojson', function ($rootScope, $timeout,
+    leafletLogger, leafletData, leafletHelpers,
     leafletWatchHelpers, leafletDirectiveControlsHelpers,leafletIterators, leafletGeoJsonEvents) {
     var _maybeWatch = leafletWatchHelpers.maybeWatch,
         _watchOptions = leafletHelpers.watchOptions,
         _extendDirectiveControls = leafletDirectiveControlsHelpers.extend,
         hlp = leafletHelpers,
+        watchTrap = {changeFromDirective: false},
         $it = leafletIterators;
         // $log = leafletLogger;
 
@@ -63,8 +65,7 @@ angular.module('ui-leaflet')
                     _remove(leafletGeoJSON);
                 };
 
-                var _addGeojson = function(model, maybeName){
-                    var geojson = angular.copy(model);
+                var _addGeojson = function(geojson, maybeName){
                     if (!(isDefined(geojson) && isDefined(geojson.data))) {
                         return;
                     }
@@ -74,12 +75,18 @@ angular.module('ui-leaflet')
                         //right here is why we use a clone / copy (we modify and thus)
                         //would kick of a watcher.. we need to be more careful everywhere
                         //for stuff like this
+                        watchTrap.changeFromDirective = true;
+
                         geojson.options = {
                             style: geojson.style,
                             filter: geojson.filter,
                             onEachFeature: onEachFeature,
                             pointToLayer: geojson.pointToLayer
                         };
+
+                        $timeout(function () {
+                            watchTrap.changeFromDirective = false;
+                        }, 10);
                     }
 
                     var lObject = L.geoJson(geojson.data, geojson.options);
@@ -117,6 +124,8 @@ angular.module('ui-leaflet')
                 _extendDirectiveControls(attrs.id, 'geojson', _create, _clean);
 
                 _maybeWatch(leafletScope,'geojson', watchOptions, function(geojson){
+                    if(watchTrap.changeFromDirective)
+                        return;
                     _create(geojson);
                 });
             });
